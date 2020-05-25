@@ -1,0 +1,56 @@
+#!/bin/bash
+
+function lint() {
+  golangci-lint run ./... -v
+}
+
+function unit() {
+  go test -v ./pkg/... -ginkgo.v -ginkgo.failFast
+}
+
+function verify() {
+  echo "Check go mod verify"
+  gomodsha=$(sha512sum go.mod)
+  gosumsha=$(sha512sum go.sum)
+  go mod verify
+  if [[ $gomodsha != $(sha512sum go.mod) ]]; then
+    echo "ERROR: go.mod was modified by 'go mod verify'"
+    exit 1
+  fi
+  if [[ $gosumsha != $(sha512sum go.sum) ]]; then
+    echo "ERROR: go.sum was modified by 'go mod verify'"
+    exit 1
+  fi
+}
+
+function e2e() {
+  go install
+  go test -v ./e2e/... -ginkgo.v -ginkgo.failFast
+}
+
+function build() {
+  docker rmi localhost:5000/kubevirt-image-service-exporter:canary --force
+  go build
+  docker build -f Dockerfile -t localhost:5000/kubevirt-image-service-exporter:canary .
+}
+
+case "${1:-}" in
+lint)       lint;;
+unit)       unit;;
+verify)    verify;;
+build)      build;;
+e2e)        e2e;;
+*)
+    echo " $0 [command]
+Test Toolbox
+
+Available Commands:
+  lint
+  unit
+  verify
+  build
+  e2e
+" >&2
+    ;;
+esac
+
