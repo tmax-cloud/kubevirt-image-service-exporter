@@ -34,7 +34,7 @@ deploy-latest:
     refs:
     - master
   script:
-  - docker tag localhost:5000/kubevirt-image-service-exporter:canary quay.io/tmaxanc/kubevirt-image-service:latest
+  - docker tag localhost:5000/kubevirt-image-service-exporter:canary quay.io/tmaxanc/kubevirt-image-service-exporter:latest
   - docker push quay.io/tmaxanc/kubevirt-image-service-exporter:latest
 
 # deploy stage for release (with tag name)
