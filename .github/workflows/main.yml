@@ -1,0 +1,67 @@
+name: kubevirt-image-service-exporter
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - v*
+  pull_request:
+jobs:
+  unit_test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: unit test
+        run: ./tbox unit
+  lint:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: golangci/golangci-lint-action@v1
+        with:
+          version: v1.26
+  verify_test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: go mod verify
+        run: ./tbox verify
+  e2e_test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: build
+        run: |
+          docker login -u=tmaxanc+robot -p=${{ secrets.QUAY_PASSWORD }} quay.io
+          ./tbox build
+          sudo apt-get install qemu-utils
+      - name: e2e test
+        run: ./tbox e2e
+  deploy-latest:
+    if: github.ref == 'refs/heads/master'
+    needs: [unit_test, lint, verify_test, e2e_test]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: build
+        run: |
+          docker login -u=tmaxanc+robot -p=${{ secrets.QUAY_PASSWORD }} quay.io
+          ./tbox build
+      - name: push
+        run: |
+          docker tag localhost:5000/kubevirt-image-service-exporter:canary quay.io/tmaxanc/kubevirt-image-service-exporter:latest
+          docker push quay.io/tmaxanc/kubevirt-image-service-exporter:latest
+  deploy-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [unit_test, lint, verify_test, e2e_test]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: build
+        run: |
+          docker login -u=tmaxanc+robot -p=${{ secrets.QUAY_PASSWORD }} quay.io
+          ./tbox build
+      - name: push
+        run: |
+          docker tag localhost:5000/kubevirt-image-service-exporter:canary quay.io/tmaxanc/kubevirt-image-service-exporter:${GITHUB_REF#refs/tags/}
+          docker push quay.io/tmaxanc/kubevirt-image-service-exporter:${GITHUB_REF#refs/tags/}
