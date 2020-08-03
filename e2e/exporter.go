@@ -37,14 +37,23 @@ const (
 	// ExportFormat indicates export image path
 	ExportFormat = "qcow2"
 	// Exporter indicates exporter program name
-	Exporter = "kubevirt-image-service-exporter"
+	Exporter = "localhost:5000/kubevirt-image-service-exporter:canary"
 )
 
 var _ = Describe("Test Exporter", func() {
 
 	table.DescribeTable("Exporting should", func(imageURL string, success bool) {
 		processExporter(imageURL, func() {
-			_, err := exporter.ExecuteCommand(false, Exporter)
+			currentPath, err := os.Getwd()
+			Expect(err).NotTo(HaveOccurred())
+			mountSourcePath := currentPath + "/" + SourceDir + ":/" + SourceDir
+			mountExportPath := currentPath + "/" + ExportDir + ":/" + ExportDir
+			envExporterSourcePath := ExporterSourcePath + "=/" + SourcePath
+			envExporterExportDir := ExporterExportDir + "=/" + ExportDir
+			envExporterDestination := ExporterDestination + "=" + ExporterDestinationLocal
+
+			argsList := []string{"run", "-v", mountSourcePath, "-v", mountExportPath, "-e", envExporterDestination, "-e", envExporterSourcePath, "-e", envExporterExportDir, Exporter}
+			_, err = exporter.ExecuteCommand(false, "docker", argsList...)
 			By("End Exporter")
 			if success {
 				Expect(err).NotTo(HaveOccurred())
