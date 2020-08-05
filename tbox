@@ -24,7 +24,6 @@ function verify() {
 }
 
 function e2e() {
-  go install
   go test -v ./e2e/... -ginkgo.v -ginkgo.failFast
 }
 
@@ -32,6 +31,7 @@ function build() {
   docker rmi localhost:5000/kubevirt-image-service-exporter:canary --force
   go build
   docker build -f Dockerfile -t localhost:5000/kubevirt-image-service-exporter:canary .
+  rm kubevirt-image-service-exporter
 }
 
 case "${1:-}" in
