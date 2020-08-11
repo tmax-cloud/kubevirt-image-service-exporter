@@ -3,9 +3,21 @@ package e2e
 import (
 	"encoding/json"
 	"kubevirt-image-service-exporter/pkg/exporter"
+	"os"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+)
+
+const(
+	// ExporterSourcePath  provides a constant to capture our env variable "EXPORTER_SOURCE_PATH"
+	ExporterSourcePath = "EXPORTER_SOURCE_PATH"
+	// ExporterExportDir  provides a constant to capture our env variable "EXPORTER_EXPORT_DIR"
+	ExporterExportDir = "EXPORTER_EXPORT_DIR"
+	// ExporterDestination provides a constant to capture our env variable "EXPORTER_DESTINATION"
+	ExporterDestination = "EXPORTER_DESTINATION"
+	// Exporter indicates exporter program name
+	Exporter = "localhost:5000/kubevirt-image-service-exporter:canary"
 )
 
 // ImgInfo contains the virtual image information.
@@ -38,4 +50,25 @@ func vailidateImage(imagePath, format string) error {
 		return errors.Wrapf(err, "Invalid Format: image %s format is %s", imagePath, info.Format)
 	}
 	return nil
+}
+
+func getArgsList(destination string) ([]string, error) {
+	currentPath, err := os.Getwd()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Can't get current path")
+	}
+	mountSourcePath := currentPath + "/" + SourceDir + ":/" + SourceDir
+	mountExportPath := currentPath + "/" + ExportDir + ":/" + ExportDir
+	envExporterSourcePath := ExporterSourcePath + "=/" + SourcePath
+	envExporterExportDir := ExporterExportDir + "=/" + ExportDir
+	envExporterDestination := ExporterDestination + "=" + destination
+	argsList := []string{"run", "-v", mountSourcePath, "-v", mountExportPath, "-e", envExporterDestination, "-e", envExporterSourcePath, "-e", envExporterExportDir}
+
+	if destination == ExporterDestinationS3 {
+		endpointURL := Endpoint + "=" + "http://" + BucketName + "." + hostIP + ":" + MinioPort + "/" + ExporterDiskImageName
+		keyID := AccessKeyID + "=" + TestKeyID
+		key := SecretAccessKey + "=" + TestKey
+		argsList = append(argsList, "-e", keyID, "-e", key, "-e", endpointURL)
+	}
+	return append(argsList, Exporter), nil
 }
