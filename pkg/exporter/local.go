@@ -12,7 +12,3 @@ func NewLocalDestination() (*LocalDestination, error) {
 func (ld *LocalDestination) Transfer() (ProcessingPhase, error) {
 	return ProcessingPhaseComplete, nil
 }
-
-// Close closes any senders or other open resources.
-func (ld *LocalDestination) Close() {
-}

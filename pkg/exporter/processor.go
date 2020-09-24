@@ -12,17 +12,17 @@ import (
 // ProcessingPhase is the current phase being processed.
 type ProcessingPhase string
 
-// Processor holds the fields needed to process data from a data provider.
+// Processor holds the fields needed to process data from a data provider
 type Processor struct {
-	// currentPhase is the phase the processing is in currently.
+	// currentPhase indicates the current phase from the entire processing procedure
 	currentPhase ProcessingPhase
-	// destination to export
+	// destination is an coherent interface for all export destinations
 	destination DataDestinationInterface
-	// sourcePath
+	// sourcePath contains a path where to find raw image
 	sourcePath string
-	// expotDir
+	// exportDir is a directory name where to put qcow2 image
 	exportDir string
-	// expotPath
+	// exportPath contains a path where to put qcow2 image
 	exportPath string
 }
 
@@ -30,8 +30,6 @@ type Processor struct {
 type DataDestinationInterface interface {
 	// Transfer is called to transfer the image to the Destination
 	Transfer() (ProcessingPhase, error)
-	// Close closes any senders or other open resources.
-	Close()
 }
 
 const (
@@ -56,7 +54,7 @@ func NewProcessor(dataDestination DataDestinationInterface, sourcePath, exportDi
 	}
 }
 
-// cleanDir cleans the contents of a directory including its sub directories, but does NOT remove thedirectory itself.
+// cleanDir cleans the contents of a directory including its sub directories, but does NOT remove the directory itself.
 func cleanDir(dest string) error {
 	dir, err := ioutil.ReadDir(dest)
 	if err != nil {
